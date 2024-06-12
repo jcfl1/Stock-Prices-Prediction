@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import pandas as pd
 import os
+import sys
 
 """COLOQUE O NOME DA ACAO COMO PARAMETRO"""
 acao = sys.argv[1]
