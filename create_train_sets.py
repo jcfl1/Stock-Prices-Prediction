@@ -18,7 +18,12 @@ def extract_target_columns(df):
 
     df_aux['Close one day variation'] = df_aux['Close for next day'] - df_aux['Close']
     df_aux['hasRise'] = df_aux['Close one day variation'] > 0
+
+
     df_aux['hasRise'] = df_aux['hasRise'].map({True:1, False:0})
+
+    # apagando colunas auxiliares
+    df_aux.drop(columns=["Close for next day", "Close one day variation"], inplace= True)
 
     return df_aux
 
@@ -31,10 +36,10 @@ def split_df(df, split_day='2023-12-01'):
     return df_train, df_test
 
 
-def normalize_and_separate_X_and_y(df_train, df_test):
+def normalize_dfs(df_train, df_test):
     # Separando coluna target antes da normalização
-    hasRise_train = df_train['hasRise']
-    hasRise_test = df_test['hasRise']
+    y_train = df_train['hasRise']
+    y_test  = df_test['hasRise']
 
     std_scaler = StandardScaler()
     std_scaler = std_scaler.fit(df_train.drop('hasRise', axis='columns'))
@@ -42,38 +47,43 @@ def normalize_and_separate_X_and_y(df_train, df_test):
     test_norm = std_scaler.transform(df_test.drop('hasRise', axis='columns'))
 
     df_train_norm = pd.DataFrame(train_norm, columns=df_train.drop('hasRise', axis='columns').columns)
-    df_test_norm = pd.DataFrame(test_norm, columns=df_test.drop('hasRise', axis='columns').columns)
+    df_test_norm  = pd.DataFrame(test_norm, columns=df_test.drop('hasRise', axis='columns').columns)
     
-    # Separando colunas de target após normalização
-    close_train_norm = df_train_norm['Close for next day'] # train
-    closeVariation_train_norm = df_train_norm['Close one day variation']
-
-    close_test_norm = df_test_norm['Close for next day'] # test
-    closeVariation_test_norm = df_test_norm['Close one day variation']
+    # recuperando a coluna de target
+    df_train_norm['hasRise'] = df_train['hasRise']
+    df_test_norm['hasRise']  = df_test['hasRise']
     
-    X_train = df_train_norm.drop(columns=["Close for next day", "Close one day variation"])
-    X_test  = df_test_norm.drop(columns= ["Close for next day", "Close one day variation"])
-
-
-    return df_train_norm, close_train_norm, closeVariation_train_norm, hasRise_train, \
-            df_test_norm, close_test_norm, closeVariation_test_norm, hasRise_test
-
-
+    return df_train, df_test
+# deveriamos salvar como csv os dados ao final desta funcao e nunca mais usa-la
+# alem disso pode ser util salvar o std_scaler em um pickle
 def get_dataset(PATH):
     df = pd.read_csv(PATH)
     df = prepare_dataset(df)
     df = extract_target_columns(df)
     df_train, df_test = split_df(df)
-    return normalize_and_separate_X_and_y(df_train, df_test)
+    df_train, df_test = normalize_dfs(df_train, df_test)
+    return df_train, df_test
 
-def get_sequences(df,window_size = 7,test_size = 1):
+def get_sequences_X_y(df,window_size = 7):
+    """window_size N significa que o modelo vai pegar os N dias consecutivos para prever os N+1°
+      O hasRise do N° contem o target desses N dias """
     
-    batchs_list = []
-    for start in range(0, len(df) - window_size - test_size + 1, test_size):
-        train = df.iloc[start:start + window_size]
-        test = df.iloc[start + window_size:start + window_size + test_size]
-        batchs_list.append((train,test))
+    targets = df.iloc[window_size:]["hasRise"]
+    seqs = df.drop('hasRise', axis='columns') # features
 
+    sequences_list =[]
+    for start in range(0, len(df) - window_size):
+        end = start + window_size
+        seq = seqs.iloc[start:end] # pego do primeiro dia da sequencia ate o window_size°
+        sequences_list.append(seq)
+
+    # X deve ter shape: (N° dias - window_size, window_size, N° colunas por dia)
+    # y deve ter shape: (N° dias - window_size, N° colunas por dia)
+    X, y = np.stack(sequences_list, axis=0), targets.to_numpy()
+    return X, y
 
 if __name__ == "__main__":
-    get_dataset("TimeSeries\PETR4_time_series.csv")
+    import os
+    df_train, df_test = get_dataset(os.path.join("TimeSeries","PETR4_prices_and_tweets_NLI_scores.csv"))
+    X_test, y_test  = get_sequences_X_y(df_train)
+    X_train, y_train  = get_sequences_X_y(df_test)
