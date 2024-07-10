@@ -10,10 +10,13 @@ def prepare_dataset(df):
 
 def extract_target_columns(df):
     df_aux = df.copy()
-
+    # subtrai as colunas de forma que o valor em 'close one day variation ==
+    # o valor da proxima linha menos o valor da linha atual
     df_aux['Close one day variation'] = df_aux['Close'] - df_aux['Close'].shift(-1)
+    #a ultima linha nao tem proxima, por isso seu valor is NaN
     df_aux.dropna(inplace= True)
-    print(df_aux['Close one day variation'].value_counts())
+
+    # pega apenas o sinal da variacao, para ser nossa variavel alvo
     df_aux['hasRise'] = df_aux['Close one day variation'] > 0
   
     df_aux['hasRise'] = df_aux['hasRise'].map({True:1, False:0})
