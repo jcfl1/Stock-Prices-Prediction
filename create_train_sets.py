@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
@@ -9,29 +10,23 @@ def prepare_dataset(df):
 
 def extract_target_columns(df):
     df_aux = df.copy()
-    close_price_per_day_1_day_shifted = df_aux['Close'][1:]
-    close_price_per_day_1_day_shifted = pd.concat([close_price_per_day_1_day_shifted, pd.Series(np.nan)], ignore_index=True)
-    # Incluindo o valor do fechamento do dia seguinte no dataframe auxiliar
-    df_aux['Close for next day'] = close_price_per_day_1_day_shifted
-    # Removendo o útlimo dia de coleta de dados por não sabermos o preço de fechamento do dia seguinte
-    df_aux = df_aux[:-1]
 
-    df_aux['Close one day variation'] = df_aux['Close for next day'] - df_aux['Close']
+    df_aux['Close one day variation'] = df_aux['Close'] - df_aux['Close'].shift(-1)
+    df_aux.dropna(inplace= True)
+    print(df_aux['Close one day variation'].value_counts())
     df_aux['hasRise'] = df_aux['Close one day variation'] > 0
-
-
+  
     df_aux['hasRise'] = df_aux['hasRise'].map({True:1, False:0})
 
     # apagando colunas auxiliares
-    df_aux.drop(columns=["Close for next day", "Close one day variation"], inplace= True)
+    df_aux.drop(columns=["Close one day variation"], inplace= True)
 
     return df_aux
 
 def split_df(df, split_day='2023-12-01'):
-    print(df.head())
+    
     df_train = df[:split_day]
     df_test = df[split_day:]
-    print(f'train.shape: {df_train.shape}, test.shape:{df_test.shape}')
 
     return df_train, df_test
 
