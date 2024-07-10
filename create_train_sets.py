@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
+import os
+import pickle
 
 def prepare_dataset(df):
     df = df.drop('stock', axis='columns')
@@ -35,10 +37,6 @@ def split_df(df, split_day='2023-12-01'):
 
 
 def normalize_dfs(df_train, df_test):
-    # Separando coluna target antes da normalização
-    y_train = df_train['hasRise']
-    y_test  = df_test['hasRise']
-
     std_scaler = StandardScaler()
     std_scaler = std_scaler.fit(df_train.drop('hasRise', axis='columns'))
     train_norm = std_scaler.transform(df_train.drop('hasRise', axis='columns'))
@@ -51,7 +49,7 @@ def normalize_dfs(df_train, df_test):
     df_train_norm['hasRise'] = df_train['hasRise']
     df_test_norm['hasRise']  = df_test['hasRise']
     
-    return df_train, df_test
+    return df_train_norm, df_test_norm, std_scaler
 # deveriamos salvar como csv os dados ao final desta funcao e nunca mais usa-la
 # alem disso pode ser util salvar o std_scaler em um pickle
 def get_dataset(PATH):
@@ -59,8 +57,8 @@ def get_dataset(PATH):
     df = prepare_dataset(df)
     df = extract_target_columns(df)
     df_train, df_test = split_df(df)
-    df_train, df_test = normalize_dfs(df_train, df_test)
-    return df_train, df_test
+    df_train, df_test,std_scaler = normalize_dfs(df_train, df_test)
+    return df_train, df_test, std_scaler
 
 def get_sequences_X_y(df,window_size = 7):
     """window_size N significa que o modelo vai pegar os N dias consecutivos para prever os N+1°
@@ -80,8 +78,32 @@ def get_sequences_X_y(df,window_size = 7):
     X, y = np.stack(sequences_list, axis=0), targets.to_numpy()
     return X, y
 
-if __name__ == "__main__":
-    import os
-    df_train, df_test = get_dataset(os.path.join("TimeSeries","PETR4_prices_and_tweets_NLI_scores.csv"))
+def prepare_and_save_tabular_and_sequence_datasets(path, stock_name):
+    path_save = os.path.join('FinalDatasets', stock_name)
+    if not os.path.exists(path_save):
+        os.makedirs(path_save)
+
+    df_train, df_test, std_scaler = get_dataset(path)
+    
+    df_train.to_csv(f'{path_save}/{stock_name}_tabular_train.csv', index=False)
+    df_test.to_csv(f'{path_save}/{stock_name}_tabular_test.csv', index=False)
+    with open(f'{path_save}/{stock_name}_scaler.pkl', 'wb') as f:
+        pickle.dump(std_scaler, f)
+
     X_test, y_test  = get_sequences_X_y(df_train)
     X_train, y_train  = get_sequences_X_y(df_test)
+
+    np.save(f'{path_save}/{stock_name}_X_timeseries_train.csv', X_train)
+    np.save(f'{path_save}/{stock_name}_y_timeseries_train.csv', y_train)
+    
+    np.save(f'{path_save}/{stock_name}_X_timeseries_test.csv', X_test)
+    np.save(f'{path_save}/{stock_name}_y_timeseries_test.csv', y_test)
+    return
+
+if __name__ == "__main__":
+
+    path_petr4 = os.path.join("TimeSeries","PETR4_prices_and_tweets_NLI_scores.csv")
+    path_vale3 = os.path.join("TimeSeries","VALE3_prices_and_tweets_NLI_scores.csv")
+
+    prepare_and_save_tabular_and_sequence_datasets(path_petr4, 'PETR4')
+    prepare_and_save_tabular_and_sequence_datasets(path_vale3, 'VALE3')
