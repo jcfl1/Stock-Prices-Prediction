@@ -7,7 +7,7 @@ import pandas as pd
 
 import sys, os
 sys.append('..')
-from create_train_sets import extract_target_columns, split_df, get_dataset
+from create_train_sets import  get_dataset, get_sequences_X_y
 
 # Define the LSTM model
 class LSTMModel(nn.Module):
@@ -24,14 +24,15 @@ class LSTMModel(nn.Module):
         return out
 
 PATH_DATASET = os.path.join("TimeSeries","PETR4_prices_and_tweets_NLI_scores.csv")
-X_train, y_train = get_dataset(PATH_DATASET) 
-
+df_train, df_test = get_dataset(PATH_DATASET) 
+X_train, y_train = get_sequences_X_y(df_train)
+X_test,y_test = get_sequences_X_y(df_test)
 
 
 # Objective function for Optuna
 def objective(trial):
     # Hyperparameter search space
-    input_size = 1  # Modify based on your dataset
+    input_size = X_train.shape[1]  # Modify based on your dataset
     output_size = 1  # Modify based on your dataset
     hidden_size = trial.suggest_int('hidden_size', 16, 128)
     num_layers = trial.suggest_int('num_layers', 1, 3)
@@ -39,7 +40,7 @@ def objective(trial):
     
     # Model, loss function, and optimizer
     model = LSTMModel(input_size, hidden_size, num_layers, output_size)
-    criterion = nn.MSELoss()
+    criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
   
