@@ -14,7 +14,7 @@ def extract_target_columns(df):
     df_aux = df.copy()
     # subtrai as colunas de forma que o valor em 'close one day variation ==
     # o valor da proxima linha menos o valor da linha atual
-    df_aux['Close one day variation'] = df_aux['Close'] - df_aux['Close'].shift(-1)
+    df_aux['Close one day variation'] = df_aux['Close'].shift(-1) - df_aux['Close']
     #a ultima linha nao tem proxima, por isso seu valor is NaN
     df_aux.dropna(inplace= True)
 
@@ -38,16 +38,22 @@ def split_df(df, split_day='2023-12-01'):
 
 def normalize_dfs(df_train, df_test):
     std_scaler = StandardScaler()
-    std_scaler = std_scaler.fit(df_train.drop('hasRise', axis='columns'))
-    train_norm = std_scaler.transform(df_train.drop('hasRise', axis='columns'))
-    test_norm = std_scaler.transform(df_test.drop('hasRise', axis='columns'))
+    df_train_aux = df_train.drop('hasRise', axis='columns').reset_index(drop=True)
+    df_test_aux = df_test.drop('hasRise', axis='columns').reset_index(drop=True)
 
-    df_train_norm = pd.DataFrame(train_norm, columns=df_train.drop('hasRise', axis='columns').columns)
-    df_test_norm  = pd.DataFrame(test_norm, columns=df_test.drop('hasRise', axis='columns').columns)
+    std_scaler = std_scaler.fit(df_train_aux)
+    train_norm = std_scaler.transform(df_train_aux)
+    test_norm = std_scaler.transform(df_test_aux)
+
+    df_train_norm = pd.DataFrame(train_norm, columns=df_train_aux.columns)
+    df_test_norm  = pd.DataFrame(test_norm, columns=df_test_aux.columns)
     
-    # recuperando a coluna de target
-    df_train_norm['hasRise'] = df_train['hasRise']
-    df_test_norm['hasRise']  = df_test['hasRise']
+    # recuperando a coluna de target e de date
+    df_train_norm['hasRise'] = df_train['hasRise'].reset_index(drop=True)
+    df_test_norm['hasRise']  = df_test['hasRise'].reset_index(drop=True)
+
+    df_train_norm['Date'] = df_train.index
+    df_test_norm['Date']  = df_test.index
     
     return df_train_norm, df_test_norm, std_scaler
 # deveriamos salvar como csv os dados ao final desta funcao e nunca mais usa-la
