@@ -53,7 +53,9 @@ def normalize_dfs(df_train, df_test):
     df_test_norm['hasRise']  = df_test['hasRise'].reset_index(drop=True)
 
     df_train_norm['Date'] = df_train.index
+    df_train_norm = df_train_norm.set_index('Date', drop=True)
     df_test_norm['Date']  = df_test.index
+    df_test_norm = df_test_norm.set_index('Date', drop=True)
     
     return df_train_norm, df_test_norm, std_scaler
 # deveriamos salvar como csv os dados ao final desta funcao e nunca mais usa-la
@@ -91,8 +93,8 @@ def prepare_and_save_tabular_and_sequence_datasets(path, stock_name):
 
     df_train, df_test, std_scaler = get_dataset(path)
     
-    df_train.to_csv(f'{path_save}/{stock_name}_tabular_train.csv', index=False)
-    df_test.to_csv(f'{path_save}/{stock_name}_tabular_test.csv', index=False)
+    df_train.to_csv(f'{path_save}/{stock_name}_tabular_train.csv')
+    df_test.to_csv(f'{path_save}/{stock_name}_tabular_test.csv')
     with open(f'{path_save}/{stock_name}_scaler.pkl', 'wb') as f:
         pickle.dump(std_scaler, f)
 
