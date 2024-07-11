@@ -4,7 +4,7 @@ from sklearn.metrics import f1_score, classification_report
 from Models.LSTM.LSTM import LSTMModel
 import optuna
 import torch
-
+import mlflow
 import sys, os
 sys.path.append('..')
 
@@ -15,6 +15,11 @@ def stop_when_metric_reached(study, trial, target_value):
     if study.best_value >= target_value:
         # Raise an Optuna specific exception to stop the study
         study.stop()
+
+def mlflow_callback(study, trial):
+    with mlflow.start_run(nested=True):
+        mlflow.log_params(trial.params)
+        mlflow.log_metric("accuracy", trial.value)
 
 def run_hiperparameter_search(X_train,y_train, ModelClass= LSTMModel, n_trials= 100):
 
@@ -57,7 +62,11 @@ def run_hiperparameter_search(X_train,y_train, ModelClass= LSTMModel, n_trials= 
 
     # Running the optimization
     study = optuna.create_study(direction='maximize')
-    study.optimize(objective, n_trials= n_trials,callbacks=[lambda study, trial: stop_when_metric_reached(study, trial, target_value=1.0)])
+    study.optimize(objective, 
+                   n_trials= n_trials,
+                   callbacks=[
+                            lambda study, trial: stop_when_metric_reached(study, trial, target_value=1.0),
+                            mlflow_callback])
 
     # Print the results
     print('Number of finished trials: ', len(study.trials))
