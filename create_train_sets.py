@@ -22,6 +22,7 @@ def extract_target_columns(df):
     df_aux['hasRise'] = df_aux['Close one day variation'] > 0
   
     df_aux['hasRise'] = df_aux['hasRise'].map({True:1, False:0})
+    
 
     # apagando colunas auxiliares
     df_aux.drop(columns=["Close one day variation"], inplace= True)
@@ -69,7 +70,8 @@ def get_dataset(PATH):
     return df_train, df_test, std_scaler
 
 def get_sequences_X_y(df,window_size = 7):
-    """window_size N significa que o modelo vai pegar os N dias consecutivos para prever os N+1°
+    """window_size N significa que o modelo vai pegar os N dias consecutivos
+      para prever se o preco vai subir do dia N para o dia N+1
       O hasRise do N° contem o target desses N dias """
     
     targets = df.iloc[window_size:]["hasRise"]
@@ -98,8 +100,8 @@ def prepare_and_save_tabular_and_sequence_datasets(path, stock_name):
     with open(f'{path_save}/{stock_name}_scaler.pkl', 'wb') as f:
         pickle.dump(std_scaler, f)
 
-    X_test, y_test  = get_sequences_X_y(df_train)
-    X_train, y_train  = get_sequences_X_y(df_test)
+    X_test, y_test  = get_sequences_X_y(df_test)
+    X_train, y_train  = get_sequences_X_y(df_train)
 
     np.save(f'{path_save}/{stock_name}_X_timeseries_train.npy', X_train)
     np.save(f'{path_save}/{stock_name}_y_timeseries_train.npy', y_train)
