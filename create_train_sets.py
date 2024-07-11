@@ -93,11 +93,11 @@ def prepare_and_save_tabular_and_sequence_datasets(path, stock_name):
     X_test, y_test  = get_sequences_X_y(df_train)
     X_train, y_train  = get_sequences_X_y(df_test)
 
-    np.save(f'{path_save}/{stock_name}_X_timeseries_train.csv', X_train)
-    np.save(f'{path_save}/{stock_name}_y_timeseries_train.csv', y_train)
+    np.save(f'{path_save}/{stock_name}_X_timeseries_train.npy', X_train)
+    np.save(f'{path_save}/{stock_name}_y_timeseries_train.npy', y_train)
     
-    np.save(f'{path_save}/{stock_name}_X_timeseries_test.csv', X_test)
-    np.save(f'{path_save}/{stock_name}_y_timeseries_test.csv', y_test)
+    np.save(f'{path_save}/{stock_name}_X_timeseries_test.npy', X_test)
+    np.save(f'{path_save}/{stock_name}_y_timeseries_test.npy', y_test)
     return
 
 if __name__ == "__main__":
