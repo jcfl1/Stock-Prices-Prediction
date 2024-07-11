@@ -8,6 +8,8 @@ from torch.utils.data import DataLoader, TensorDataset
 class LSTMModel(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, output_size, device= 'cpu'):
         super(LSTMModel, self).__init__()
+        self.input_size = input_size
+        self.output_size = output_size
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
         self.fc = nn.Linear(hidden_size, output_size)
         self.sigmoid = nn.Sigmoid()  # Sigmoid activation to convert logits to probabilities
