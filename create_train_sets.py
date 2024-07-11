@@ -22,6 +22,7 @@ def extract_target_columns(df):
     df_aux['hasRise'] = df_aux['Close one day variation'] > 0
   
     df_aux['hasRise'] = df_aux['hasRise'].map({True:1, False:0})
+    
 
     # apagando colunas auxiliares
     df_aux.drop(columns=["Close one day variation"], inplace= True)
@@ -53,7 +54,9 @@ def normalize_dfs(df_train, df_test):
     df_test_norm['hasRise']  = df_test['hasRise'].reset_index(drop=True)
 
     df_train_norm['Date'] = df_train.index
+    df_train_norm = df_train_norm.set_index('Date', drop=True)
     df_test_norm['Date']  = df_test.index
+    df_test_norm = df_test_norm.set_index('Date', drop=True)
     
     return df_train_norm, df_test_norm, std_scaler
 # deveriamos salvar como csv os dados ao final desta funcao e nunca mais usa-la
@@ -67,7 +70,8 @@ def get_dataset(PATH):
     return df_train, df_test, std_scaler
 
 def get_sequences_X_y(df,window_size = 7):
-    """window_size N significa que o modelo vai pegar os N dias consecutivos para prever os N+1°
+    """window_size N significa que o modelo vai pegar os N dias consecutivos
+      para prever se o preco vai subir do dia N para o dia N+1
       O hasRise do N° contem o target desses N dias """
     
     targets = df.iloc[window_size:]["hasRise"]
@@ -91,13 +95,13 @@ def prepare_and_save_tabular_and_sequence_datasets(path, stock_name):
 
     df_train, df_test, std_scaler = get_dataset(path)
     
-    df_train.to_csv(f'{path_save}/{stock_name}_tabular_train.csv', index=False)
-    df_test.to_csv(f'{path_save}/{stock_name}_tabular_test.csv', index=False)
+    df_train.to_csv(f'{path_save}/{stock_name}_tabular_train.csv')
+    df_test.to_csv(f'{path_save}/{stock_name}_tabular_test.csv')
     with open(f'{path_save}/{stock_name}_scaler.pkl', 'wb') as f:
         pickle.dump(std_scaler, f)
 
-    X_test, y_test  = get_sequences_X_y(df_train)
-    X_train, y_train  = get_sequences_X_y(df_test)
+    X_test, y_test  = get_sequences_X_y(df_test)
+    X_train, y_train  = get_sequences_X_y(df_train)
 
     np.save(f'{path_save}/{stock_name}_X_timeseries_train.npy', X_train)
     np.save(f'{path_save}/{stock_name}_y_timeseries_train.npy', y_train)
