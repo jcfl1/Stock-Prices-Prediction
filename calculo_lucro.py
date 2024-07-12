@@ -3,16 +3,16 @@ from pandas_datareader import data as pdr
 yf.pdr_override()
 import pandas as pd
 from datetime import datetime
+from datetime import timedelta
 
 
-def calculo_lucro(model, df, X, acao= "PETR4", capital_inicial = 100):
+def calculo_lucro(model, df, X, acao= "PETR4", capital_inicial = 10_000):
 
-    start_date = df["Date"].iloc[0]
-    end_date = df["Date"].iloc[1]
-    preco_inicial = pdr.get_data_yahoo(acao+'.SA', start=start_date, end=end_date)["Open"].values[0]
-    print("preco inicial:",preco_inicial)
-  
-    df["Close"] = df["Close"]*preco_inicial
+    datas = pd.to_datetime(df["Date"])
+    start_date = datas.iloc[0]
+    end_date = datas.iloc[-1]
+    df = pdr.get_data_yahoo(acao+'.SA', start=start_date, end=end_date + timedelta(days=1))
+
     
     # Suponha que seu dataset tem as seguintes colunas:
     # 'Date': Data da observação
@@ -30,11 +30,11 @@ def calculo_lucro(model, df, X, acao= "PETR4", capital_inicial = 100):
     posicao = 0  # Quantidade de ações que possuímos
 
     # Iterando sobre cada linha do dataset
-    for i in range(1, len(df)):
+    for i in range(0, len(df)):
         if df['Prediction'].iloc[i] == 1:  # Previsão de alta
             # Comprar ações se tivermos capital
             if capital >= df['Close'].iloc[i]:
-                acoes_compradas = capital // df["Close"].iloc[i]
+                acoes_compradas = np.floor(capital) // np.ceil(df["Close"].iloc[i])
                 capital -= acoes_compradas * df["Close"].iloc[i]
                 posicao += acoes_compradas
         elif df['Prediction'].iloc[i] == 0:  # Previsão de baixa
@@ -42,6 +42,8 @@ def calculo_lucro(model, df, X, acao= "PETR4", capital_inicial = 100):
             if posicao > 0:
                 capital += posicao * df["Close"].iloc[i]
                 posicao = 0
+        valor_hoje = capital + posicao * df['Close'].iloc[i]
+        print(valor_hoje,capital, posicao)
 
     # Valor final considerando o valor das ações restantes
     valor_final = capital + posicao * df['Close'].iloc[len(df) - 1]
@@ -63,7 +65,7 @@ if __name__ == "__main__":
     X_test = np.load(get_dataset_path(stock= "VALE3", get_labels= False, get_train= False))
 
     df_test = pd.read_csv(os.path.join("FinalDatasets","VALE3","VALE3_tabular_test.csv"))
-
+  
     model = LSTMModel(input_size=X_train.shape[-1], hidden_size= 104, num_layers= 1, output_size= 1)
     model.fit(X_train, y_train, learning_rate= 0.0029308294553194235)
     model.eval()
