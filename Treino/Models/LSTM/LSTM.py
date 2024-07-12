@@ -10,7 +10,9 @@ class LSTMModel(nn.Module):
         self.input_size = input_size
         self.output_size = output_size
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
+        self.fc1 = nn.Linear(hidden_size, hidden_size)
+        self.relu = nn.ReLU(True)
+        self.fc2 = nn.Linear(hidden_size, output_size)
         self.sigmoid = nn.Sigmoid()  # Sigmoid activation to convert logits to probabilities
         self.device = device
         self.to(device)
@@ -19,7 +21,9 @@ class LSTMModel(nn.Module):
         h0 = torch.zeros(self.lstm.num_layers, x.size(0), self.lstm.hidden_size).to(x.device)
         c0 = torch.zeros(self.lstm.num_layers, x.size(0), self.lstm.hidden_size).to(x.device)
         out, _ = self.lstm(x, (h0, c0))
-        out = self.fc(out[:, -1, :])
+        out = self.fc1(out[:, -1, :])
+        out = self.relu(out)
+        out = self.fc2(out)
         return out.squeeze(1) # output has only batch dimension
 
     def fit(self, X_train, y_train, learning_rate, num_epochs = 50):
