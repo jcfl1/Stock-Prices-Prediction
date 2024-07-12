@@ -1,4 +1,4 @@
-link do vídeo de apresentação: [apresentação](https://drive.google.com/file/d/1f4ZJhIebSo4GtuPv7CV97wJOATz4ut6j/view?usp=sharing)
+link do vídeo de apresentação: [apresentação](https://drive.google.com/file/d/1w2KOnkOt4ZLxmvJPMLpXVa1jEnKywPOF/view?usp=sharing)
 
 
 # Stock-Prices-Prediction
