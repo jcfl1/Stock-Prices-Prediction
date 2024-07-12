@@ -7,8 +7,11 @@ from datetime import datetime
 
 def calculo_lucro(model, df, X, acao= "PETR4", capital_inicial = 100):
 
-    start_date = df["Date"]
-    preco_inicial = pdr.get_data_yahoo(acao, start=start_date, end=start_date)["Open"]
+    start_date = df["Date"].iloc[0]
+    end_date = df["Date"].iloc[1]
+    preco_inicial = pdr.get_data_yahoo(acao+'.SA', start=start_date, end=end_date)["Open"].values[0]
+    print("preco inicial:",preco_inicial)
+  
     df["Close"] = df["Close"]*preco_inicial
     
     # Suponha que seu dataset tem as seguintes colunas:
@@ -16,6 +19,8 @@ def calculo_lucro(model, df, X, acao= "PETR4", capital_inicial = 100):
     # 'Prediction': Previsão do modelo (1 para alta, 0 para baixa)
 
     y_pred = model.predict(X)
+
+    df.drop(index=df.index[:7], inplace= True)
 
     df["Prediction"] = y_pred
 
@@ -26,20 +31,20 @@ def calculo_lucro(model, df, X, acao= "PETR4", capital_inicial = 100):
 
     # Iterando sobre cada linha do dataset
     for i in range(1, len(df)):
-        if df.loc[i, 'Prediction'] == 1:  # Previsão de alta
+        if df['Prediction'].iloc[i] == 1:  # Previsão de alta
             # Comprar ações se tivermos capital
-            if capital >= df.loc[i, 'Close']:
-                acoes_compradas = capital // df.loc[i, 'Close']
-                capital -= acoes_compradas * df.loc[i, 'Close']
+            if capital >= df['Close'].iloc[i]:
+                acoes_compradas = capital // df["Close"].iloc[i]
+                capital -= acoes_compradas * df["Close"].iloc[i]
                 posicao += acoes_compradas
-        elif df.loc[i, 'Prediction'] == 0:  # Previsão de baixa
+        elif df['Prediction'].iloc[i] == 0:  # Previsão de baixa
             # Vender todas as ações se tivermos alguma
             if posicao > 0:
-                capital += posicao * df.loc[i, 'Close']
+                capital += posicao * df["Close"].iloc[i]
                 posicao = 0
 
     # Valor final considerando o valor das ações restantes
-    valor_final = capital + posicao * df.loc[len(df) - 1, 'Close']
+    valor_final = capital + posicao * df['Close'].iloc[len(df) - 1]
 
     # Calculando o retorno
     retorno = (valor_final - capital_inicial) / capital_inicial * 100
@@ -51,12 +56,22 @@ if __name__ == "__main__":
     import os
     import numpy as np
 
-    #model = LSTMModel(hidden_size= 104, num_layers= 1)
-    for acao in ["PETR4", "VALE3"]:
+    get_dataset_path = lambda  stock, get_labels, get_train: os.path.join("FinalDatasets", stock,f"{stock}_{'y' if get_labels else 'X'}_timeseries_{'train' if get_train else 'test'}.npy")
 
-        model = torch.load(os.path.join("Treino","Models","LSTM",f"{acao}_all_features.pt"))
-        model.eval()
+    X_train = np.load(get_dataset_path(stock= "VALE3", get_labels= False, get_train= True))
+    y_train = np.load(get_dataset_path(stock= "VALE3", get_labels= True, get_train= True))
+    X_test = np.load(get_dataset_path(stock= "VALE3", get_labels= False, get_train= False))
 
-        df = pd.read_csv(os.path.join("FinalDatasets",acao,f"{acao}_tabular_test.csv"))
-        X = np.load(os.path.join("FinalDatasets",acao,f"{acao}_X_timeseries_test.npy"))
-        calculo_lucro(model, df, X, acao)
+    df_test = pd.read_csv(os.path.join("FinalDatasets","VALE3","VALE3_tabular_test.csv"))
+
+    model = LSTMModel(input_size=X_train.shape[-1], hidden_size= 104, num_layers= 1, output_size= 1)
+    model.fit(X_train, y_train, learning_rate= 0.0029308294553194235)
+    model.eval()
+    calculo_lucro(model, df_test,X_test,"VALE3")
+    # for acao in ["PETR4", "VALE3"]:
+
+    #     model = torch.load(os.path.join("Treino","Models","LSTM",f"{acao}_all_features.pt"))
+    #     model.eval()
+
+    #     X = np.load(os.path.join("FinalDatasets",acao,f"{acao}_X_timeseries_test.npy"))
+    #     calculo_lucro(model, df, X, acao)
