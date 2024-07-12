@@ -3,13 +3,13 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
-# Define the LSTM model
-class LSTMModel(nn.Module):
+# Define the GRU model
+class GRUModel(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, output_size, device= 'cpu'):
-        super(LSTMModel, self).__init__()
+        super(GRUModel, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.gru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True)
         self.fc1 = nn.Linear(hidden_size, hidden_size)
         self.relu = nn.ReLU(True)
         self.fc2 = nn.Linear(hidden_size, output_size)
@@ -18,9 +18,8 @@ class LSTMModel(nn.Module):
         self.to(device)
 
     def forward(self, x):
-        h0 = torch.zeros(self.lstm.num_layers, x.size(0), self.lstm.hidden_size).to(x.device)
-        c0 = torch.zeros(self.lstm.num_layers, x.size(0), self.lstm.hidden_size).to(x.device)
-        out, _ = self.lstm(x, (h0, c0))
+        h0 = torch.zeros(self.gru.num_layers, x.size(0), self.gru.hidden_size).to(x.device)
+        out, _ = self.gru(x, h0)
         out = self.fc1(out[:, -1, :])
         out = self.relu(out)
         out = self.fc2(out)
@@ -59,5 +58,3 @@ class LSTMModel(nn.Module):
             predictions = (probabilities > threshold).float()  # Thresholding to get 0 or 1
         # Convert predictions to numpy array and return
         return predictions.cpu().numpy().astype(int)
-
-
