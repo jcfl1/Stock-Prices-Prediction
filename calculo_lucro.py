@@ -54,6 +54,7 @@ def calculo_lucro(model, df, X, acao= "PETR4", capital_inicial = 10_000):
 
 if __name__ == "__main__":
     from Treino.Models.LSTM.LSTM_dropout import LSTMModel_dropout
+    from Treino.Models.GRU.GRU_dropout import GRUModel_dropout
     import torch
     import os
     import numpy as np
@@ -66,8 +67,8 @@ if __name__ == "__main__":
 
     df_test = pd.read_csv(os.path.join("FinalDatasets","VALE3","VALE3_tabular_test.csv"))
   
-    model = LSTMModel_dropout(input_size=X_train.shape[-1], hidden_size= 69, num_layers= 1, output_size= 1)
-    model.fit(X_train, y_train, learning_rate=  0.005737968057665162)
+    model = GRUModel_dropout(input_size=X_train.shape[-1], hidden_size= 51, num_layers= 1, output_size= 1)
+    model.fit(X_train, y_train, learning_rate=   0.0030332268738291496)
     model.eval()
     calculo_lucro(model, df_test,X_test,"VALE3")
     # for acao in ["PETR4", "VALE3"]:
